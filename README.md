@@ -68,7 +68,6 @@ This program can also be built and run under Windows Subsystem for Linux (WSL).
 
 ## 🔮 Future Improvements
 
-* Extended instruction substitution.
 * Additional block-scattering variations.
 * Further low-level optimizations.
 
