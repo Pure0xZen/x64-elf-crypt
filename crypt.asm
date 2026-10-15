@@ -7,7 +7,6 @@ section .data
     len3        equ $-msg3
     msg4        db  "Choose one option (1/2): ", 0
     len4        equ $-msg4
-    number      dq  0x0
     msg5        db  10, "Enter message: ", 0
     len5        equ $-msg5
     seed        dq  0xDEADBEEFDEADBEEF
@@ -38,12 +37,12 @@ section .bss
     octet6      resb    1
     octet7      resb    1
     octet8      resb    1
-    nonbuffer   resb    8
     out_len     resq    1
 
 section .text
                 global _start
 _start:
+    xor r8, r8
     mov rax, 1
     mov rdi, 1
     mov rsi, msg1
@@ -68,10 +67,13 @@ huh:
 huh1:
     mov rax, 0
     mov rdi, 0
-    mov rsi, number
-    mov rdx, 2     ;known issue
+    lea rsi, [buffer+r8]
+    mov rdx, 1
     syscall
-    jmp check
+    cmp byte [buffer+r8], 0x0A
+    je check
+    inc r8
+    jmp huh1
 enter_msg:
     mov rax, 1
     mov rdi, 1
@@ -106,7 +108,9 @@ read_input:
 
     ret
 check:
-    mov al, [rel number]
+    cmp r8, 0x1
+    jg error
+    mov al, [rel buffer]
     cmp al, '1'
     je encrypt
     cmp al, '2'
@@ -227,22 +231,6 @@ buffer_writer:
     mov rbx, [rel input_len]
     mov rax, [rel nonce]
     mov r15, rax
-    mov [rel nonbuffer], r15b
-    shr r15, 8
-    mov [rel nonbuffer+1], r15b
-    shr r15, 8
-    mov [rel nonbuffer+2], r15b
-    shr r15, 8
-    mov [rel nonbuffer+3], r15b
-    shr r15, 8
-    mov [rel nonbuffer+4], r15b
-    shr r15, 8
-    mov [rel nonbuffer+5], r15b
-    shr r15, 8
-    mov [rel nonbuffer+6], r15b
-    shr r15, 8
-    mov [rel nonbuffer+7], r15b
-    shr r15, 8
     mov al, [rel key]
     mov [rel octet1], al
     mov al, [rel key+1]
@@ -704,13 +692,6 @@ remake_key2:
     cmp rcx, 8
     jne remake_key2
     ret
-final_clear:
-    cmp rbx, r8
-    jge return
-    mov al, [buffer+rbx]
-    mov [buffer+rbx-6], al
-    inc rbx
-    jmp final_clear
 octet1_decrypt:
     cmp r9, r8
     jae return
